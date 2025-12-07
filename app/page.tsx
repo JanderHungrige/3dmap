@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ExternalLink, Map, Loader2 } from 'lucide-react';
+import { ExternalLink, Map, Loader2, Eye, EyeOff, Info } from 'lucide-react';
 import MapCanvas from '@/components/MapCanvas';
 import ControlsPanel from '@/components/ControlsPanel';
 import { parseBoundingBox, BoundingBox } from '@/lib/tileUtils';
@@ -15,6 +15,8 @@ export default function Home() {
   const [autoRotate, setAutoRotate] = useState(true);
   const [meshResolution, setMeshResolution] = useState<128 | 256 | 512 | 1024>(256);
   const [filterMethod, setFilterMethod] = useState<FilterMethod>('median');
+  const [useRealScale, setUseRealScale] = useState(false);
+  const [showUI, setShowUI] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exportFunctions, setExportFunctions] = useState<{
@@ -37,8 +39,33 @@ export default function Home() {
 
   return (
     <main className="min-h-screen w-full relative">
+      {/* UI Toggle Button */}
+      <button
+        onClick={() => setShowUI(!showUI)}
+        className="absolute top-4 left-4 z-30 p-3 glass rounded-lg hover:bg-white/10 transition-colors"
+        title={showUI ? 'Hide UI' : 'Show UI'}
+      >
+        {showUI ? <EyeOff className="w-5 h-5 text-white" /> : <Eye className="w-5 h-5 text-white" />}
+      </button>
+
+      {/* Controls Info */}
+      {showUI && (
+        <div className="absolute top-4 right-4 z-30 glass rounded-lg p-3 max-w-xs">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-gray-300">
+              <div className="font-semibold text-white mb-1">Controls:</div>
+              <div>🖱️ Left Mouse: Rotate</div>
+              <div>🖱️ Right Mouse: Pan</div>
+              <div>🖱️ Scroll: Zoom</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-20 p-6">
+      {showUI && (
+        <div className="absolute top-0 left-0 right-0 z-20 p-6">
         <div className="max-w-7xl mx-auto">
           <div className="glass rounded-2xl p-6 shadow-2xl">
             <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -96,7 +123,8 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Canvas */}
       <div className="w-full h-screen">
@@ -108,6 +136,8 @@ export default function Home() {
             autoRotate={autoRotate}
             meshResolution={meshResolution}
             filterMethod={filterMethod}
+            useRealScale={useRealScale}
+            onUseRealScaleChange={setUseRealScale}
             onLoadingChange={setLoading}
             onExportReady={setExportFunctions}
           />
@@ -127,7 +157,7 @@ export default function Home() {
       </div>
 
       {/* Controls Panel */}
-      {bbox && exportFunctions && (
+      {showUI && bbox && exportFunctions && (
         <div className="absolute bottom-6 right-6 z-20">
           <div className="glass rounded-xl p-4 shadow-2xl">
             <ControlsPanel
@@ -141,6 +171,8 @@ export default function Home() {
               onMeshResolutionChange={setMeshResolution}
               filterMethod={filterMethod}
               onFilterMethodChange={setFilterMethod}
+              useRealScale={useRealScale}
+              onUseRealScaleChange={setUseRealScale}
               onExportJPEG={exportFunctions.exportJPEG}
               onExportGLB={exportFunctions.exportGLB}
               onExportSVG={exportFunctions.exportSVG}

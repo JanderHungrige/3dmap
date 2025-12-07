@@ -14,6 +14,8 @@ interface ControlsPanelProps {
   onMeshResolutionChange: (value: 128 | 256 | 512 | 1024) => void;
   filterMethod: FilterMethod;
   onFilterMethodChange: (value: FilterMethod) => void;
+  useRealScale: boolean;
+  onUseRealScaleChange: (value: boolean) => void;
   onExportJPEG: () => void;
   onExportGLB: () => void;
   onExportSVG: () => void;
@@ -30,6 +32,8 @@ export default function ControlsPanel({
   onMeshResolutionChange,
   filterMethod,
   onFilterMethodChange,
+  useRealScale,
+  onUseRealScaleChange,
   onExportJPEG,
   onExportGLB,
   onExportSVG,
@@ -78,6 +82,10 @@ export default function ControlsPanel({
         'Hampel (Robust Outlier Filter)': 'median',
       },
       onChange: (value) => onFilterMethodChange(value as FilterMethod),
+    },
+    'Use Real Scale': {
+      value: useRealScale,
+      onChange: onUseRealScaleChange,
     },
     'Auto Rotate': {
       value: autoRotate,

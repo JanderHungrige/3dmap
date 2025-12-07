@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, useTexture, Plane } from '@react-three/drei';
 import * as THREE from 'three';
 import { BoundingBox } from '@/lib/tileUtils';
@@ -17,6 +17,8 @@ interface MapCanvasProps {
   autoRotate: boolean;
   meshResolution: 128 | 256 | 512 | 1024;
   filterMethod: FilterMethod;
+  useRealScale: boolean;
+  onUseRealScaleChange: (value: boolean) => void;
   onLoadingChange: (loading: boolean) => void;
   onExportReady: (exports: {
     exportJPEG: () => void;
@@ -31,6 +33,7 @@ function TerrainMesh({
   heightExaggeration,
   meshResolution,
   filterMethod,
+  useRealScale,
   satelliteTexture,
   streetsTexture,
   terrainImageData,
@@ -42,6 +45,7 @@ function TerrainMesh({
   heightExaggeration: number;
   meshResolution: 128 | 256 | 512 | 1024;
   filterMethod: FilterMethod;
+  useRealScale: boolean;
   satelliteTexture: THREE.Texture | null;
   streetsTexture: THREE.Texture | null;
   terrainImageData: ImageData | null;
@@ -108,18 +112,26 @@ function TerrainMesh({
     
     const elevationRange = maxElevation - minElevation;
     
-    // Scale elevation range to be 25% of plane width for good visibility
-    const targetElevationUnits = planeWidth * 0.25;
-    const baseScale = elevationRange > 0 
-      ? targetElevationUnits / elevationRange 
-      : 0.01;
+    // Calculate base scale based on whether real-world scale is enabled
+    let baseScale: number;
+    if (useRealScale) {
+      // Real-world scale: 1 meter = 0.1 units (proportional to plane size)
+      // This maintains realistic proportions between horizontal and vertical dimensions
+      baseScale = 0.1; // 1 meter elevation = 0.1 units in 3D space
+    } else {
+      // Scaled for visibility: elevation range scaled to 25% of plane width
+      const targetElevationUnits = planeWidth * 0.25;
+      baseScale = elevationRange > 0 
+        ? targetElevationUnits / elevationRange 
+        : 0.01;
+    }
     
     console.log('Elevation stats:', { 
       minElevation: minElevation.toFixed(2), 
       maxElevation: maxElevation.toFixed(2), 
       elevationRange: elevationRange.toFixed(2), 
       baseScale: baseScale.toFixed(6),
-      targetElevationUnits: targetElevationUnits.toFixed(2),
+      useRealScale,
       heightExaggeration,
       meshResolution,
       filterMethod
@@ -169,8 +181,15 @@ function TerrainMesh({
       const elevationMeters = h0 * (1 - fy) + h1 * fy;
       
       // Scale and apply exaggeration
-      const normalizedElevation = elevationMeters - minElevation;
-      const elevation = normalizedElevation * baseScale * heightExaggeration;
+      let elevation: number;
+      if (useRealScale) {
+        // Real scale: use actual elevation in meters, offset from sea level
+        elevation = elevationMeters * baseScale * heightExaggeration;
+      } else {
+        // Normalized scale: offset from minimum elevation
+        const normalizedElevation = elevationMeters - minElevation;
+        elevation = normalizedElevation * baseScale * heightExaggeration;
+      }
       
       positions[i * 3 + 2] = elevation;
       
@@ -187,9 +206,10 @@ function TerrainMesh({
       appliedMax: appliedMax.toFixed(4),
       range: (appliedMax - appliedMin).toFixed(4),
       vertices: positions.length / 3,
-      filterMethod
+      filterMethod,
+      useRealScale
     });
-  }, [terrainImageData, heightExaggeration, terrainWidth, terrainHeight, planeWidth, meshResolution, filterMethod]);
+  }, [terrainImageData, heightExaggeration, terrainWidth, terrainHeight, planeWidth, meshResolution, filterMethod, useRealScale]);
 
   const texture = textureType === 'satellite' ? satelliteTexture : streetsTexture;
   
@@ -210,6 +230,23 @@ function TerrainMesh({
   );
 }
 
+// Component to reset camera when scale changes
+function CameraReset({ useRealScale }: { useRealScale: boolean }) {
+  const { camera } = useThree();
+  const prevScaleRef = useRef(useRealScale);
+
+  useEffect(() => {
+    if (prevScaleRef.current !== useRealScale) {
+      // Reset camera to center position when scale mode changes
+      camera.position.set(0, 8, 8);
+      camera.lookAt(0, 0, 0);
+      prevScaleRef.current = useRealScale;
+    }
+  }, [useRealScale, camera]);
+
+  return null;
+}
+
 export default function MapCanvas({
   bbox,
   textureType,
@@ -217,6 +254,8 @@ export default function MapCanvas({
   autoRotate,
   meshResolution,
   filterMethod,
+  useRealScale,
+  onUseRealScaleChange,
   onLoadingChange,
   onExportReady,
 }: MapCanvasProps) {
@@ -284,6 +323,8 @@ export default function MapCanvas({
       >
         <PerspectiveCamera makeDefault position={[0, 8, 8]} fov={50} />
         
+        <CameraReset useRealScale={useRealScale} />
+        
         <ambientLight intensity={0.4} />
         <directionalLight
           position={[10, 10, 5]}
@@ -302,6 +343,7 @@ export default function MapCanvas({
               heightExaggeration={heightExaggeration}
               meshResolution={meshResolution}
               filterMethod={filterMethod}
+              useRealScale={useRealScale}
               satelliteTexture={satelliteTexture}
               streetsTexture={streetsTexture}
               terrainImageData={terrainImageData}
@@ -319,6 +361,11 @@ export default function MapCanvas({
           enableZoom={true}
           minDistance={3}
           maxDistance={20}
+          mouseButtons={{
+            LEFT: THREE.MOUSE.ROTATE,
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+          }}
         />
       </Canvas>
     </div>
