@@ -1,6 +1,7 @@
 'use client';
 
 import { useControls, button } from 'leva';
+import { FilterMethod } from '@/lib/terrainFilters';
 
 interface ControlsPanelProps {
   textureType: 'satellite' | 'streets';
@@ -9,6 +10,10 @@ interface ControlsPanelProps {
   onHeightChange: (value: number) => void;
   autoRotate: boolean;
   onAutoRotateChange: (value: boolean) => void;
+  meshResolution: 128 | 256 | 512 | 1024;
+  onMeshResolutionChange: (value: 128 | 256 | 512 | 1024) => void;
+  filterMethod: FilterMethod;
+  onFilterMethodChange: (value: FilterMethod) => void;
   onExportJPEG: () => void;
   onExportGLB: () => void;
   onExportSVG: () => void;
@@ -21,6 +26,10 @@ export default function ControlsPanel({
   onHeightChange,
   autoRotate,
   onAutoRotateChange,
+  meshResolution,
+  onMeshResolutionChange,
+  filterMethod,
+  onFilterMethodChange,
   onExportJPEG,
   onExportGLB,
   onExportSVG,
@@ -31,12 +40,44 @@ export default function ControlsPanel({
       options: ['satellite', 'streets'],
       onChange: (value) => onTextureChange(value as 'satellite' | 'streets'),
     },
+    'Mesh Resolution': {
+      value: meshResolution,
+      options: {
+        'Low (Mobile)': 128,
+        'Medium (Fast)': 256,
+        'High (Detailed)': 512,
+        'Ultra (Sharp) ⚠️': 1024,
+      },
+      onChange: (value) => {
+        const numValue = value as number;
+        if (numValue === 1024 && meshResolution !== 1024) {
+          // Show warning but allow change
+          const confirmed = window.confirm(
+            '⚠️ Ultra resolution (1024 segments) is performance-heavy and may cause lag on slower devices. Continue?'
+          );
+          if (!confirmed) {
+            // User cancelled - don't change
+            return;
+          }
+        }
+        onMeshResolutionChange(numValue as 128 | 256 | 512 | 1024);
+      },
+    },
     'Height Exaggeration': {
       value: heightExaggeration,
       min: 0.1,
       max: 5,
       step: 0.1,
       onChange: onHeightChange,
+    },
+    'Artifact Filter': {
+      value: filterMethod,
+      options: {
+        'None (Raw Data)': 'none',
+        'Capping (Fast Clip)': 'capping',
+        'Median (Smooth Filter)': 'median',
+      },
+      onChange: (value) => onFilterMethodChange(value as FilterMethod),
     },
     'Auto Rotate': {
       value: autoRotate,

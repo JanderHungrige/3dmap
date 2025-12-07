@@ -5,6 +5,7 @@ import { ExternalLink, Map, Loader2 } from 'lucide-react';
 import MapCanvas from '@/components/MapCanvas';
 import ControlsPanel from '@/components/ControlsPanel';
 import { parseBoundingBox, BoundingBox } from '@/lib/tileUtils';
+import { FilterMethod } from '@/lib/terrainFilters';
 
 export default function Home() {
   const [bboxInput, setBboxInput] = useState('');
@@ -12,6 +13,8 @@ export default function Home() {
   const [textureType, setTextureType] = useState<'satellite' | 'streets'>('satellite');
   const [heightExaggeration, setHeightExaggeration] = useState(1);
   const [autoRotate, setAutoRotate] = useState(true);
+  const [meshResolution, setMeshResolution] = useState<128 | 256 | 512 | 1024>(256);
+  const [filterMethod, setFilterMethod] = useState<FilterMethod>('none');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exportFunctions, setExportFunctions] = useState<{
@@ -103,6 +106,8 @@ export default function Home() {
             textureType={textureType}
             heightExaggeration={heightExaggeration}
             autoRotate={autoRotate}
+            meshResolution={meshResolution}
+            filterMethod={filterMethod}
             onLoadingChange={setLoading}
             onExportReady={setExportFunctions}
           />
@@ -132,6 +137,10 @@ export default function Home() {
               onHeightChange={setHeightExaggeration}
               autoRotate={autoRotate}
               onAutoRotateChange={setAutoRotate}
+              meshResolution={meshResolution}
+              onMeshResolutionChange={setMeshResolution}
+              filterMethod={filterMethod}
+              onFilterMethodChange={setFilterMethod}
               onExportJPEG={exportFunctions.exportJPEG}
               onExportGLB={exportFunctions.exportGLB}
               onExportSVG={exportFunctions.exportSVG}
