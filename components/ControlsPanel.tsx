@@ -66,8 +66,8 @@ export default function ControlsPanel({
     'Height Exaggeration': {
       value: heightExaggeration,
       min: 0.1,
-      max: 5,
-      step: 0.1,
+      max: 1,
+      step: 0.05,
       onChange: onHeightChange,
     },
     'Artifact Filter': {

@@ -14,7 +14,7 @@ export default function Home() {
   const [heightExaggeration, setHeightExaggeration] = useState(1);
   const [autoRotate, setAutoRotate] = useState(true);
   const [meshResolution, setMeshResolution] = useState<128 | 256 | 512 | 1024>(256);
-  const [filterMethod, setFilterMethod] = useState<FilterMethod>('none');
+  const [filterMethod, setFilterMethod] = useState<FilterMethod>('median');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exportFunctions, setExportFunctions] = useState<{
