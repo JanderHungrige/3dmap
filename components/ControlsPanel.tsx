@@ -75,7 +75,7 @@ export default function ControlsPanel({
       options: {
         'None (Raw Data)': 'none',
         'Capping (Fast Clip)': 'capping',
-        'Median (Smooth Filter)': 'median',
+        'Hampel (Robust Outlier Filter)': 'median',
       },
       onChange: (value) => onFilterMethodChange(value as FilterMethod),
     },
