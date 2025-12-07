@@ -119,6 +119,49 @@ The code applies a hard cap at **8000 meters** (`ABSOLUTE_MAX_HEIGHT`) to filter
 
 This is the standard Mapbox Terrain-RGB encoding format.
 
+## Height Exaggeration Slider
+
+The Height Exaggeration slider (range: 0.1 to 1.0) multiplies the final elevation value after Terrain-RGB conversion and scaling. It does not modify the formula itself, but scales the visualization result.
+
+### Complete Calculation Flow:
+
+1. **Terrain-RGB to meters** (formula):
+   ```
+   elevationMeters = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1)
+   ```
+
+2. **Apply base scaling** (for 3D visualization):
+   - **Real Scale Mode**: `baseScale = 0.1` (1 meter = 0.1 units in 3D space)
+   - **Normalized Scale Mode**: `baseScale = (planeWidth * 0.25) / elevationRange` (scales elevation range to 25% of plane width)
+
+3. **Apply height exaggeration** (slider value):
+   ```
+   finalElevation = elevationMeters * baseScale * heightExaggeration
+   ```
+   
+   Or in Normalized Mode:
+   ```
+   finalElevation = (elevationMeters - minElevation) * baseScale * heightExaggeration
+   ```
+
+### What the Slider Does:
+
+The slider value acts as a multiplier:
+
+- **Value = 1.0**: Uses the calculated elevation as-is (no exaggeration, true-to-scale in Real Scale mode)
+- **Value = 0.5**: Reduces elevation to 50% (flatter terrain)
+- **Value = 0.1**: Reduces elevation to 10% (very flat terrain)
+
+### Example:
+
+If the formula calculates `elevationMeters = 1000m`:
+
+- With slider at **1.0**: `finalElevation = 1000 * 0.1 * 1.0 = 100 units` (Real Scale mode)
+- With slider at **0.5**: `finalElevation = 1000 * 0.1 * 0.5 = 50 units` (half height)
+- With slider at **0.1**: `finalElevation = 1000 * 0.1 * 0.1 = 10 units` (very flat)
+
+The slider allows you to adjust terrain visibility without changing the underlying elevation data from the Terrain-RGB tiles.
+
 ## Project Structure
 
 ```
