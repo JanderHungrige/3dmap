@@ -22,7 +22,10 @@ interface MapCanvasProps {
   onLoadingChange: (loading: boolean) => void;
   onExportReady: (exports: {
     exportJPEG: () => void;
+    exportPNG: () => void;
     exportGLB: () => void;
+    exportOBJ: () => void;
+    exportSTL: () => void;
     exportSVG: () => void;
   }) => void;
 }
@@ -219,7 +222,14 @@ function TerrainMesh({
   }
 
   return (
-    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow geometry={geometryRef.current}>
+    <mesh 
+      ref={meshRef} 
+      rotation={[-Math.PI / 2, 0, 0]} 
+      receiveShadow 
+      castShadow 
+      geometry={geometryRef.current}
+      userData={{ isTerrain: true }}
+    >
       <meshStandardMaterial
         map={texture || undefined}
         roughness={0.7}

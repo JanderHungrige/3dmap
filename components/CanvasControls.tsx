@@ -3,11 +3,16 @@
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
+import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter.js';
+import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 
 interface CanvasControlsProps {
   onExportReady: (exports: {
     exportJPEG: () => void;
+    exportPNG: () => void;
     exportGLB: () => void;
+    exportOBJ: () => void;
+    exportSTL: () => void;
     exportSVG: () => void;
   }) => void;
 }
@@ -20,6 +25,15 @@ export function CanvasControls({ onExportReady }: CanvasControlsProps) {
       const dataURL = gl.domElement.toDataURL('image/jpeg', 0.95);
       const link = document.createElement('a');
       link.download = 'terrain-map.jpg';
+      link.href = dataURL;
+      link.click();
+    };
+
+    const exportAsPNG = () => {
+      // PNG is lossless - no compression artifacts, perfect for maps with sharp lines and text
+      const dataURL = gl.domElement.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'terrain-map.png';
       link.href = dataURL;
       link.click();
     };
@@ -49,6 +63,57 @@ export function CanvasControls({ onExportReady }: CanvasControlsProps) {
         );
       } catch (error) {
         console.error('Error exporting GLB:', error);
+      }
+    };
+
+    const exportAsOBJ = () => {
+      try {
+        // Find the terrain mesh in the scene
+        const terrainMesh = scene.children.find(
+          (child) => child.type === 'Mesh' && child.userData.isTerrain
+        ) || scene.children.find((child) => child.type === 'Mesh');
+
+        if (!terrainMesh) {
+          console.error('No terrain mesh found in scene');
+          return;
+        }
+
+        const exporter = new OBJExporter();
+        const objString = exporter.parse(terrainMesh);
+        
+        const blob = new Blob([objString], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.download = 'terrain-map.obj';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      } catch (error) {
+        console.error('Error exporting OBJ:', error);
+      }
+    };
+
+    const exportAsSTL = () => {
+      try {
+        // Find the terrain mesh in the scene
+        const terrainMesh = scene.children.find(
+          (child) => child.type === 'Mesh' && child.userData.isTerrain
+        ) || scene.children.find((child) => child.type === 'Mesh');
+
+        if (!terrainMesh) {
+          console.error('No terrain mesh found in scene');
+          return;
+        }
+
+        const exporter = new STLExporter();
+        // Use binary format for smaller file sizes (standard for 3D printing)
+        const stlBinary = exporter.parse(terrainMesh, { binary: true });
+        
+        const blob = new Blob([stlBinary], { type: 'application/octet-stream' });
+        const link = document.createElement('a');
+        link.download = 'terrain-map.stl';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+      } catch (error) {
+        console.error('Error exporting STL:', error);
       }
     };
 
@@ -86,7 +151,10 @@ export function CanvasControls({ onExportReady }: CanvasControlsProps) {
 
     onExportReady({
       exportJPEG: exportAsJPEG,
+      exportPNG: exportAsPNG,
       exportGLB: exportAsGLB,
+      exportOBJ: exportAsOBJ,
+      exportSTL: exportAsSTL,
       exportSVG: exportAsSVG,
     });
   }, [gl, scene, onExportReady]);

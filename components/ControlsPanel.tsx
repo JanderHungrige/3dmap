@@ -2,6 +2,7 @@
 
 import { useControls, button } from 'leva';
 import { FilterMethod } from '@/lib/terrainFilters';
+import { useState } from 'react';
 
 interface ControlsPanelProps {
   textureType: 'satellite' | 'streets';
@@ -17,7 +18,10 @@ interface ControlsPanelProps {
   useRealScale: boolean;
   onUseRealScaleChange: (value: boolean) => void;
   onExportJPEG: () => void;
+  onExportPNG: () => void;
   onExportGLB: () => void;
+  onExportOBJ: () => void;
+  onExportSTL: () => void;
   onExportSVG: () => void;
 }
 
@@ -35,9 +39,37 @@ export default function ControlsPanel({
   useRealScale,
   onUseRealScaleChange,
   onExportJPEG,
+  onExportPNG,
   onExportGLB,
+  onExportOBJ,
+  onExportSTL,
   onExportSVG,
 }: ControlsPanelProps) {
+  const [exportFormat, setExportFormat] = useState<'jpeg' | 'png' | 'glb' | 'obj' | 'stl' | 'svg'>('png');
+
+  const handleExport = () => {
+    switch (exportFormat) {
+      case 'jpeg':
+        onExportJPEG();
+        break;
+      case 'png':
+        onExportPNG();
+        break;
+      case 'glb':
+        onExportGLB();
+        break;
+      case 'obj':
+        onExportOBJ();
+        break;
+      case 'stl':
+        onExportSTL();
+        break;
+      case 'svg':
+        onExportSVG();
+        break;
+    }
+  };
+
   useControls({
     Texture: {
       value: textureType,
@@ -91,9 +123,19 @@ export default function ControlsPanel({
       value: autoRotate,
       onChange: onAutoRotateChange,
     },
-    'Export JPEG': button(() => onExportJPEG()),
-    'Export GLB': button(() => onExportGLB()),
-    'Export SVG': button(() => onExportSVG()),
+    'Export Format': {
+      value: exportFormat,
+      options: {
+        'PNG (Lossless Image)': 'png',
+        'JPEG (Compressed Image)': 'jpeg',
+        'GLB (3D Model)': 'glb',
+        'OBJ (Universal 3D)': 'obj',
+        'STL (3D Printing)': 'stl',
+        'SVG (Wireframe)': 'svg',
+      },
+      onChange: (value) => setExportFormat(value as typeof exportFormat),
+    },
+    'Save': button(() => handleExport()),
   });
 
   return null;

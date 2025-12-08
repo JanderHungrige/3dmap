@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ExternalLink, Map, Loader2, Eye, EyeOff, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ExternalLink, Map, Loader2, Eye, EyeOff, Info, Settings } from 'lucide-react';
 import MapCanvas from '@/components/MapCanvas';
 import ControlsPanel from '@/components/ControlsPanel';
 import { parseBoundingBox, BoundingBox } from '@/lib/tileUtils';
@@ -18,11 +18,18 @@ export default function Home() {
   const [useRealScale, setUseRealScale] = useState(false);
   const [showUI, setShowUI] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mapboxUsage, setMapboxUsage] = useState<{ static: number; raster: number } | null>(null);
+  const [apiToken, setApiToken] = useState('');
+  const [tokenError, setTokenError] = useState<string | null>(null);
   const [exportFunctions, setExportFunctions] = useState<{
     exportJPEG: () => void;
+    exportPNG: () => void;
     exportGLB: () => void;
+    exportOBJ: () => void;
+    exportSTL: () => void;
     exportSVG: () => void;
   } | null>(null);
 
@@ -37,6 +44,31 @@ export default function Home() {
     
     setBbox(parsed);
   };
+
+  // Fetch Mapbox usage stats when admin panel opens
+  useEffect(() => {
+    if (showAdmin) {
+      const fetchMapboxUsage = async () => {
+        try {
+          const response = await fetch('/api/mapbox-usage');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.static !== null && data.raster !== null) {
+              setMapboxUsage({ static: data.static, raster: data.raster });
+            } else {
+              setMapboxUsage(null);
+            }
+          } else {
+            setMapboxUsage(null);
+          }
+        } catch (error) {
+          console.error('Error fetching Mapbox usage:', error);
+          setMapboxUsage(null);
+        }
+      };
+      fetchMapboxUsage();
+    }
+  }, [showAdmin]);
 
   return (
     <main className="min-h-screen w-full relative">
@@ -64,6 +96,13 @@ export default function Home() {
                 title="Show information"
               >
                 <Info className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setShowAdmin(!showAdmin)}
+                className="p-1.5 text-gray-400 hover:text-purple-400 transition-colors rounded hover:bg-white/5"
+                title="Admin panel"
+              >
+                <Settings className="w-5 h-5" />
               </button>
             </div>
             <p className="text-gray-300 text-sm mb-4">
@@ -110,6 +149,132 @@ export default function Home() {
                           <div>• Values &gt; 1.0 = more dramatic terrain</div>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Admin Panel */}
+            {showAdmin && (
+              <div className="mb-4 glass rounded-lg p-4 text-xs text-gray-300 border border-white/10">
+                <div className="space-y-4">
+                  <div className="font-semibold text-white mb-3 flex items-center justify-between">
+                    <span>Admin Panel</span>
+                    <button
+                      onClick={() => setShowAdmin(false)}
+                      className="text-gray-400 hover:text-white text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  {/* Restart Application */}
+                  <div>
+                    <button
+                      onClick={() => {
+                        if (confirm('Are you sure you want to restart the application?')) {
+                          window.location.reload();
+                        }
+                      }}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
+                    >
+                      Restart Application
+                    </button>
+                  </div>
+                  
+                  {/* Mapbox Usage */}
+                  <div>
+                    <div className="font-semibold text-white mb-2">Mapbox API Usage</div>
+                    <div className="pl-2 space-y-1">
+                      {mapboxUsage && mapboxUsage.static !== null && mapboxUsage.raster !== null ? (
+                        <>
+                          <div>Static Tiles API: {mapboxUsage.static.toLocaleString()} requests</div>
+                          <div>Raster Tiles API: {mapboxUsage.raster.toLocaleString()} requests</div>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch('/api/mapbox-usage');
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  if (data.static !== null && data.raster !== null) {
+                                    setMapboxUsage({ static: data.static, raster: data.raster });
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Error fetching usage:', error);
+                              }
+                            }}
+                            className="mt-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+                          >
+                            Refresh Usage
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-gray-400">Usage statistics not available</div>
+                          <div className="text-gray-500 text-xs mt-1">
+                            Note: Requires Mapbox Management API integration
+                          </div>
+                          <div className="text-gray-500 text-xs mt-1">
+                            View usage at: <a href="https://console.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Mapbox Console</a>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* API Token Management */}
+                  <div>
+                    <div className="font-semibold text-white mb-2">Mapbox API Token</div>
+                    <div className="space-y-2">
+                      <input
+                        type="password"
+                        value={apiToken}
+                        onChange={(e) => setApiToken(e.target.value)}
+                        placeholder="Enter your Mapbox API token"
+                        className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                      />
+                      {tokenError && (
+                        <div className="text-red-400 text-xs">{tokenError}</div>
+                      )}
+                      <button
+                        onClick={async () => {
+                          if (!apiToken.trim()) {
+                            setTokenError('Please enter a valid API token');
+                            return;
+                          }
+                          
+                          try {
+                            const response = await fetch('/api/update-token', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({ token: apiToken }),
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                              setTokenError(null);
+                              alert('API token updated successfully! Please restart the application.');
+                              setApiToken('');
+                            } else {
+                              setTokenError(data.error || 'Failed to update token');
+                            }
+                          } catch (error) {
+                            setTokenError('Error updating token. Please check console.');
+                            console.error('Error updating token:', error);
+                          }
+                        }}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors text-sm"
+                      >
+                        Update API Token
+                      </button>
+                      <div className="text-gray-500 text-xs">
+                        Token will be saved to .env.local file
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -218,7 +383,10 @@ export default function Home() {
               useRealScale={useRealScale}
               onUseRealScaleChange={setUseRealScale}
               onExportJPEG={exportFunctions.exportJPEG}
+              onExportPNG={exportFunctions.exportPNG}
               onExportGLB={exportFunctions.exportGLB}
+              onExportOBJ={exportFunctions.exportOBJ}
+              onExportSTL={exportFunctions.exportSTL}
               onExportSVG={exportFunctions.exportSVG}
             />
           </div>
