@@ -24,6 +24,9 @@ export default function Home() {
   const [mapboxUsage, setMapboxUsage] = useState<{ static: number; raster: number } | null>(null);
   const [apiToken, setApiToken] = useState('');
   const [tokenError, setTokenError] = useState<string | null>(null);
+  const [mapboxSecretToken, setMapboxSecretToken] = useState('');
+  const [mapboxUsername, setMapboxUsername] = useState('');
+  const [mapboxConfigError, setMapboxConfigError] = useState<string | null>(null);
   const [exportFunctions, setExportFunctions] = useState<{
     exportJPEG: () => void;
     exportPNG: () => void;
@@ -185,39 +188,56 @@ export default function Home() {
                   
                   {/* Mapbox Usage */}
                   <div>
-                    <div className="font-semibold text-white mb-2">Mapbox API Usage</div>
+                    <div className="font-semibold text-white mb-2 flex items-center justify-between">
+                      <span>Mapbox API Usage</span>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/mapbox-usage');
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.static !== null && data.raster !== null) {
+                                setMapboxUsage({ static: data.static, raster: data.raster });
+                              } else if (data.error) {
+                                setMapboxUsage(null);
+                                alert(`Error: ${data.error}\n\n${data.message || ''}`);
+                              } else {
+                                setMapboxUsage(null);
+                              }
+                            } else {
+                              const data = await response.json();
+                              setMapboxUsage(null);
+                              alert(`Error fetching usage: ${data.error || 'Unknown error'}`);
+                            }
+                          } catch (error) {
+                            console.error('Error fetching usage:', error);
+                            setMapboxUsage(null);
+                            alert('Error fetching usage statistics');
+                          }
+                        }}
+                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-xs transition-colors text-white font-medium"
+                      >
+                        Update Usage
+                      </button>
+                    </div>
                     <div className="pl-2 space-y-1">
                       {mapboxUsage && mapboxUsage.static !== null && mapboxUsage.raster !== null ? (
                         <>
                           <div>Static Tiles API: {mapboxUsage.static.toLocaleString()} requests</div>
                           <div>Raster Tiles API: {mapboxUsage.raster.toLocaleString()} requests</div>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const response = await fetch('/api/mapbox-usage');
-                                if (response.ok) {
-                                  const data = await response.json();
-                                  if (data.static !== null && data.raster !== null) {
-                                    setMapboxUsage({ static: data.static, raster: data.raster });
-                                  }
-                                }
-                              } catch (error) {
-                                console.error('Error fetching usage:', error);
-                              }
-                            }}
-                            className="mt-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
-                          >
-                            Refresh Usage
-                          </button>
                         </>
                       ) : (
                         <>
                           <div className="text-gray-400">Usage statistics not available</div>
-                          <div className="text-gray-500 text-xs mt-1">
-                            Note: Requires Mapbox Management API integration
-                          </div>
-                          <div className="text-gray-500 text-xs mt-1">
-                            View usage at: <a href="https://console.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Mapbox Console</a>
+                          <div className="text-gray-500 text-xs mt-1 space-y-1">
+                            <div>To enable usage tracking:</div>
+                            <div>1. Get your Mapbox username from <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">account.mapbox.com</a></div>
+                            <div>2. Create a secret token with Management API access</div>
+                            <div>3. Enter credentials above and click "Update Management API Config"</div>
+                            <div>4. Click "Update Usage" button to fetch statistics</div>
+                            <div className="mt-2">
+                              Or view usage at: <a href="https://console.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Mapbox Console</a>
+                            </div>
                           </div>
                         </>
                       )}
@@ -274,6 +294,77 @@ export default function Home() {
                       </button>
                       <div className="text-gray-500 text-xs">
                         Token will be saved to .env.local file
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Mapbox Management API Configuration */}
+                  <div>
+                    <div className="font-semibold text-white mb-2">Mapbox Management API Config</div>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Secret Token</label>
+                        <input
+                          type="password"
+                          value={mapboxSecretToken}
+                          onChange={(e) => setMapboxSecretToken(e.target.value)}
+                          placeholder="Enter Mapbox secret token"
+                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">Username</label>
+                        <input
+                          type="text"
+                          value={mapboxUsername}
+                          onChange={(e) => setMapboxUsername(e.target.value)}
+                          placeholder="Enter Mapbox username"
+                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        />
+                      </div>
+                      {mapboxConfigError && (
+                        <div className="text-red-400 text-xs">{mapboxConfigError}</div>
+                      )}
+                      <button
+                        onClick={async () => {
+                          if (!mapboxSecretToken.trim() || !mapboxUsername.trim()) {
+                            setMapboxConfigError('Please enter both secret token and username');
+                            return;
+                          }
+                          
+                          try {
+                            const response = await fetch('/api/update-mapbox-config', {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                              },
+                              body: JSON.stringify({ 
+                                secretToken: mapboxSecretToken,
+                                username: mapboxUsername 
+                              }),
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                              setMapboxConfigError(null);
+                              alert('Mapbox Management API config updated successfully! Usage stats will be available after restart.');
+                              setMapboxSecretToken('');
+                              setMapboxUsername('');
+                            } else {
+                              setMapboxConfigError(data.error || 'Failed to update config');
+                            }
+                          } catch (error) {
+                            setMapboxConfigError('Error updating config. Please check console.');
+                            console.error('Error updating config:', error);
+                          }
+                        }}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors text-sm"
+                      >
+                        Update Management API Config
+                      </button>
+                      <div className="text-gray-500 text-xs">
+                        Config will be saved to .env.local file
                       </div>
                     </div>
                   </div>
