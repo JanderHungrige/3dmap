@@ -652,7 +652,7 @@ export default function MapCanvas({
         ref={canvasRef}
         shadows
         gl={{ antialias: true, preserveDrawingBuffer: true }}
-        className="bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900"
+        className="bg-gradient-to-b from-black via-gray-900 to-black"
       >
         <PerspectiveCamera makeDefault position={[0, 8, 8]} fov={50} />
         

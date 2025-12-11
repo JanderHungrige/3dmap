@@ -144,19 +144,19 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="glass rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-text text-transparent">
                 3D Terrain Map Generator
               </h1>
               <button
                 onClick={() => setShowInfo(!showInfo)}
-                className="p-1.5 text-gray-400 hover:text-purple-400 transition-colors rounded hover:bg-white/5"
+                className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors rounded hover:bg-white/5"
                 title="Show information"
               >
                 <Info className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setShowAdmin(!showAdmin)}
-                className="p-1.5 text-gray-400 hover:text-purple-400 transition-colors rounded hover:bg-white/5"
+                className="p-1.5 text-gray-400 hover:text-yellow-500 transition-colors rounded hover:bg-white/5"
                 title="Admin panel"
               >
                 <Settings className="w-5 h-5" />
@@ -184,7 +184,7 @@ export default function Home() {
                   <div>
                     <div className="font-semibold text-white mb-2">Height Exaggeration:</div>
                     <div className="pl-2">
-                      <div className="font-medium text-purple-300 mb-1.5">
+                      <div className="font-medium text-yellow-400 mb-1.5">
                         {useRealScale ? 'Real Scale Mode:' : 'Normalized Scale Mode:'}
                       </div>
                       {useRealScale ? (
@@ -192,7 +192,7 @@ export default function Home() {
                           <div>• Height uses actual elevation in meters</div>
                           <div>• Scale: 1 meter = 0.1 units in 3D space</div>
                           <div>• Slider multiplies the actual elevation</div>
-                          <div className="pt-1 text-purple-300">• Value of 1.0 = true-to-scale height</div>
+                          <div className="pt-1 text-yellow-400">• Value of 1.0 = true-to-scale height</div>
                           <div>• Values &lt; 1.0 = reduced height</div>
                           <div>• Values &gt; 1.0 = exaggerated height</div>
                         </div>
@@ -201,7 +201,7 @@ export default function Home() {
                           <div>• Height is normalized and scaled for visibility</div>
                           <div>• Elevation range scaled to 25% of plane width</div>
                           <div>• Slider multiplies the normalized elevation</div>
-                          <div className="pt-1 text-purple-300">• Value of 1.0 = standard visibility scale</div>
+                          <div className="pt-1 text-yellow-400">• Value of 1.0 = standard visibility scale</div>
                           <div>• Values &lt; 1.0 = flatter terrain</div>
                           <div>• Values &gt; 1.0 = more dramatic terrain</div>
                         </div>
@@ -234,7 +234,7 @@ export default function Home() {
                           window.location.reload();
                         }
                       }}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors"
+                      className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-black font-medium transition-colors"
                     >
                       Restart Application
                     </button>
@@ -269,7 +269,7 @@ export default function Home() {
                             alert('Error fetching usage statistics');
                           }
                         }}
-                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-xs transition-colors text-white font-medium"
+                        className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 rounded text-xs transition-colors text-black font-medium"
                       >
                         Update Usage
                       </button>
@@ -285,12 +285,12 @@ export default function Home() {
                           <div className="text-gray-400">Usage statistics not available</div>
                           <div className="text-gray-500 text-xs mt-1 space-y-1">
                             <div>To enable usage tracking:</div>
-                            <div>1. Get your Mapbox username from <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">account.mapbox.com</a></div>
+                            <div>1. Get your Mapbox username from <a href="https://account.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">account.mapbox.com</a></div>
                             <div>2. Create a secret token with Management API access</div>
                             <div>3. Enter credentials above and click "Update Management API Config"</div>
                             <div>4. Click "Update Usage" button to fetch statistics</div>
                             <div className="mt-2">
-                              Or view usage at: <a href="https://console.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline">Mapbox Console</a>
+                              Or view usage at: <a href="https://console.mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:underline">Mapbox Console</a>
                             </div>
                           </div>
                         </>
@@ -307,7 +307,7 @@ export default function Home() {
                         value={apiToken}
                         onChange={(e) => setApiToken(e.target.value)}
                         placeholder="Enter your Mapbox API token"
-                        className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                        className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                       />
                       {tokenError && (
                         <div className="text-red-400 text-xs">{tokenError}</div>
@@ -342,7 +342,7 @@ export default function Home() {
                             console.error('Error updating token:', error);
                           }
                         }}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors text-sm"
+                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-black font-medium transition-colors text-sm"
                       >
                         Update API Token
                       </button>
@@ -363,7 +363,7 @@ export default function Home() {
                           value={mapboxSecretToken}
                           onChange={(e) => setMapboxSecretToken(e.target.value)}
                           placeholder="Enter Mapbox secret token"
-                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                         />
                       </div>
                       <div>
@@ -373,7 +373,7 @@ export default function Home() {
                           value={mapboxUsername}
                           onChange={(e) => setMapboxUsername(e.target.value)}
                           placeholder="Enter Mapbox username"
-                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                          className="w-full px-3 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                         />
                       </div>
                       {mapboxConfigError && (
@@ -413,7 +413,7 @@ export default function Home() {
                             console.error('Error updating config:', error);
                           }
                         }}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium transition-colors text-sm"
+                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-black font-medium transition-colors text-sm"
                       >
                         Update Management API Config
                       </button>
@@ -437,14 +437,14 @@ export default function Home() {
                     value={bboxInput}
                     onChange={(e) => setBboxInput(e.target.value)}
                     placeholder="-122.5, 37.7, -122.3, 37.8"
-                    className="flex-1 px-4 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-4 py-2 bg-black/40 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                   />
                   <div className="flex flex-col items-end gap-1">
                     <a
                       href="https://boundingbox.klokantech.com/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white font-medium flex items-center gap-2 transition-colors whitespace-nowrap"
+                      className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-black font-medium flex items-center gap-2 transition-colors whitespace-nowrap"
                     >
                       <ExternalLink className="w-4 h-4" />
                       Get Coordinates
@@ -461,7 +461,7 @@ export default function Home() {
                 <button
                   onClick={handleGenerate}
                   disabled={loading}
-                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg text-black font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <>
@@ -478,7 +478,7 @@ export default function Home() {
                 <button
                   onClick={handleGenerateRayshader}
                   disabled={rayshaderLoading}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg text-black font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {rayshaderLoading ? (
                     <>
@@ -519,7 +519,7 @@ export default function Home() {
             <div className="w-full h-full flex items-center justify-center bg-black relative">
               {rayshaderLoading ? (
                 <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="w-12 h-12 animate-spin text-purple-400" />
+                  <Loader2 className="w-12 h-12 animate-spin text-yellow-500" />
                   <div className="text-white text-lg">Rendering high-quality Rayshader visualization...</div>
                   <div className="text-gray-400 text-sm">This may take a few moments</div>
                 </div>
@@ -529,7 +529,7 @@ export default function Home() {
                   <div className="text-gray-300">{rayshaderError}</div>
                   <button
                     onClick={handleGenerateRayshader}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors"
+                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-black transition-colors"
                   >
                     Try Again
                   </button>
@@ -551,9 +551,9 @@ export default function Home() {
             </div>
           )
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-black via-gray-900 to-black">
             <div className="text-center glass rounded-2xl p-12 max-w-md">
-              <Map className="w-16 h-16 mx-auto mb-4 text-purple-400" />
+              <Map className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
               <h2 className="text-2xl font-bold mb-2 text-white">
                 Enter Bounding Box Coordinates
               </h2>
