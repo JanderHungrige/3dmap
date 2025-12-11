@@ -10,12 +10,16 @@ import { FilterMethod } from '@/lib/terrainFilters';
 export default function Home() {
   const [bboxInput, setBboxInput] = useState('');
   const [bbox, setBbox] = useState<BoundingBox | null>(null);
-  const [textureType, setTextureType] = useState<'satellite' | 'streets'>('satellite');
+  const [viewMode, setViewMode] = useState<'r3f' | 'rayshader'>('r3f');
+  const [rayshaderImage, setRayshaderImage] = useState<string | null>(null);
+  const [rayshaderLoading, setRayshaderLoading] = useState(false);
+  const [rayshaderError, setRayshaderError] = useState<string | null>(null);
+  const [textureType, setTextureType] = useState<'satellite' | 'streets' | 'heatmap'>('satellite');
   const [heightExaggeration, setHeightExaggeration] = useState(1);
   const [autoRotate, setAutoRotate] = useState(true);
   const [meshResolution, setMeshResolution] = useState<128 | 256 | 512 | 1024>(256);
   const [filterMethod, setFilterMethod] = useState<FilterMethod>('median');
-  const [useRealScale, setUseRealScale] = useState(false);
+  const [useRealScale] = useState(true); // Always use Real Scale mode
   const [showUI, setShowUI] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -38,6 +42,7 @@ export default function Home() {
 
   const handleGenerate = () => {
     setError(null);
+    setRayshaderError(null);
     const parsed = parseBoundingBox(bboxInput);
     
     if (!parsed) {
@@ -46,6 +51,55 @@ export default function Home() {
     }
     
     setBbox(parsed);
+    setViewMode('r3f');
+  };
+
+  const handleGenerateRayshader = async () => {
+    setError(null);
+    setRayshaderError(null);
+    const parsed = parseBoundingBox(bboxInput);
+    
+    if (!parsed) {
+      setError('Invalid bounding box format. Please use: minLon, minLat, maxLon, maxLat');
+      return;
+    }
+    
+    setBbox(parsed);
+    setViewMode('rayshader');
+    setRayshaderLoading(true);
+    setRayshaderImage(null);
+
+    try {
+      const response = await fetch('/api/rayshader-render', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          minLon: parsed.minLon,
+          minLat: parsed.minLat,
+          maxLon: parsed.maxLon,
+          maxLat: parsed.maxLat,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to generate Rayshader render');
+      }
+
+      if (data.imageUrl || data.imageBase64) {
+        setRayshaderImage(data.imageUrl || data.imageBase64);
+      } else {
+        throw new Error('No image data received from server');
+      }
+    } catch (error) {
+      console.error('Error generating Rayshader render:', error);
+      setRayshaderError(error instanceof Error ? error.message : 'Failed to generate Rayshader render');
+    } finally {
+      setRayshaderLoading(false);
+    }
   };
 
   // Fetch Mapbox usage stats when admin panel opens
@@ -403,44 +457,99 @@ export default function Home() {
                 )}
               </div>
               
-              <button
-                onClick={handleGenerate}
-                disabled={loading}
-                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Map className="w-4 h-4" />
-                    Generate 3D Map
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleGenerate}
+                  disabled={loading}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Map className="w-4 h-4" />
+                      Generate 3D Map
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleGenerateRayshader}
+                  disabled={rayshaderLoading}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {rayshaderLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Rendering...
+                    </>
+                  ) : (
+                    <>
+                      <Map className="w-4 h-4" />
+                      Generate Rayshader Map (High Quality)
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
         </div>
       )}
 
-      {/* Canvas */}
+      {/* Canvas / Rayshader Display */}
       <div className="w-full h-screen">
         {bbox ? (
-          <MapCanvas
-            bbox={bbox}
-            textureType={textureType}
-            heightExaggeration={heightExaggeration}
-            autoRotate={autoRotate}
-            meshResolution={meshResolution}
-            filterMethod={filterMethod}
-            useRealScale={useRealScale}
-            onUseRealScaleChange={setUseRealScale}
-            onLoadingChange={setLoading}
-            onExportReady={setExportFunctions}
-          />
+          viewMode === 'r3f' ? (
+            <MapCanvas
+              bbox={bbox}
+              textureType={textureType}
+              heightExaggeration={heightExaggeration}
+              autoRotate={autoRotate}
+              meshResolution={meshResolution}
+              filterMethod={filterMethod}
+              useRealScale={useRealScale}
+              onUseRealScaleChange={() => {}} // No-op since we always use Real Scale
+              onLoadingChange={setLoading}
+              onExportReady={setExportFunctions}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-black relative">
+              {rayshaderLoading ? (
+                <div className="flex flex-col items-center gap-4">
+                  <Loader2 className="w-12 h-12 animate-spin text-purple-400" />
+                  <div className="text-white text-lg">Rendering high-quality Rayshader visualization...</div>
+                  <div className="text-gray-400 text-sm">This may take a few moments</div>
+                </div>
+              ) : rayshaderError ? (
+                <div className="flex flex-col items-center gap-4 max-w-md text-center">
+                  <div className="text-red-400 text-lg font-semibold">Rendering Error</div>
+                  <div className="text-gray-300">{rayshaderError}</div>
+                  <button
+                    onClick={handleGenerateRayshader}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : rayshaderImage ? (
+                <div className="w-full h-full flex items-center justify-center p-4">
+                  <img
+                    src={rayshaderImage}
+                    alt="Rayshader rendered terrain"
+                    className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+                  />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-4 text-gray-400">
+                  <Map className="w-16 h-16" />
+                  <div>Click "Generate Rayshader Map" to render</div>
+                </div>
+              )}
+            </div>
+          )
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900">
             <div className="text-center glass rounded-2xl p-12 max-w-md">
@@ -465,14 +574,14 @@ export default function Home() {
               onTextureChange={setTextureType}
               heightExaggeration={heightExaggeration}
               onHeightChange={setHeightExaggeration}
+              useRealScale={useRealScale}
               autoRotate={autoRotate}
               onAutoRotateChange={setAutoRotate}
               meshResolution={meshResolution}
               onMeshResolutionChange={setMeshResolution}
               filterMethod={filterMethod}
               onFilterMethodChange={setFilterMethod}
-              useRealScale={useRealScale}
-              onUseRealScaleChange={setUseRealScale}
+              onUseRealScaleChange={() => {}} // No-op since we always use Real Scale
               onExportJPEG={exportFunctions.exportJPEG}
               onExportPNG={exportFunctions.exportPNG}
               onExportGLB={exportFunctions.exportGLB}

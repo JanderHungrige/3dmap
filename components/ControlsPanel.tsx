@@ -5,8 +5,8 @@ import { FilterMethod } from '@/lib/terrainFilters';
 import { useState } from 'react';
 
 interface ControlsPanelProps {
-  textureType: 'satellite' | 'streets';
-  onTextureChange: (type: 'satellite' | 'streets') => void;
+  textureType: 'satellite' | 'streets' | 'heatmap';
+  onTextureChange: (type: 'satellite' | 'streets' | 'heatmap') => void;
   heightExaggeration: number;
   onHeightChange: (value: number) => void;
   autoRotate: boolean;
@@ -73,8 +73,8 @@ export default function ControlsPanel({
   useControls({
     Texture: {
       value: textureType,
-      options: ['satellite', 'streets'],
-      onChange: (value) => onTextureChange(value as 'satellite' | 'streets'),
+      options: ['satellite', 'streets', 'heatmap'],
+      onChange: (value) => onTextureChange(value as 'satellite' | 'streets' | 'heatmap'),
     },
     'Mesh Resolution': {
       value: meshResolution,
@@ -101,9 +101,9 @@ export default function ControlsPanel({
     },
     'Height Exaggeration': {
       value: heightExaggeration,
-      min: 0.1,
-      max: 1,
-      step: 0.05,
+      min: 1,
+      max: 5,
+      step: 0.1,
       onChange: onHeightChange,
     },
     'Artifact Filter': {
@@ -114,10 +114,6 @@ export default function ControlsPanel({
         'Hampel (Robust Outlier Filter)': 'median',
       },
       onChange: (value) => onFilterMethodChange(value as FilterMethod),
-    },
-    'Use Real Scale': {
-      value: useRealScale,
-      onChange: onUseRealScaleChange,
     },
     'Auto Rotate': {
       value: autoRotate,
