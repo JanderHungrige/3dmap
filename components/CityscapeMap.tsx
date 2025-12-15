@@ -436,7 +436,7 @@ function Building({
     ? baseElevation * horizontalScaleFactor * heightExaggeration
     : baseElevation * 0.01 * heightExaggeration;
 
-  const polygons = feature.geometry.type === 'MultiPolygon'
+  const polygons: number[][][] = feature.geometry.type === 'MultiPolygon'
     ? feature.geometry.coordinates
     : [feature.geometry.coordinates];
 

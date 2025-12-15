@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BoundingBox, getTilesForBoundingBox, tileToBoundingBox } from '@/lib/tileUtils';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
+import bboxClip from '@turf/bbox-clip';
+import { polygon, multiPolygon, feature } from '@turf/helpers';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
       try {
         const url = `https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/${tile.z}/${tile.x}/${tile.y}.vector.pbf?access_token=${token}`;
         const response = await fetch(url);
-        
+
         if (!response.ok) {
           console.warn(`Failed to fetch tile ${tile.x}/${tile.y}/${tile.z}: ${response.statusText}`);
           return;
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
         const arrayBuffer = await response.arrayBuffer();
         const pbf = new Pbf(new Uint8Array(arrayBuffer));
         const vectorTile = new VectorTile(pbf);
-        
+
         const buildingLayer = vectorTile.layers['building'];
         if (!buildingLayer) return;
 
@@ -55,69 +57,51 @@ export async function POST(request: NextRequest) {
         const tileHeight = tileBbox.maxLat - tileBbox.minLat;
 
         for (let i = 0; i < buildingLayer.length; i++) {
-          const feature = buildingLayer.feature(i);
-          
+          const vectFeature = buildingLayer.feature(i);
+
           // Deduplicate by ID
-          if (feature.id !== undefined && seenIds.has(feature.id)) {
+          if (vectFeature.id !== undefined && seenIds.has(vectFeature.id)) {
             continue;
           }
-          if (feature.id !== undefined) {
-            seenIds.add(feature.id);
+          if (vectFeature.id !== undefined) {
+            seenIds.add(vectFeature.id);
           }
 
           // Convert geometry to GeoJSON
-          const geometry = feature.loadGeometry();
-          const coordinates: number[][][] = []; // MultiPolygon structure
+          const geometry = vectFeature.loadGeometry();
 
           // Helper to convert tile coordinates to Lat/Lon
-          // Vector tiles default extent is 4096
-          const convertPoint = (p: {x: number, y: number}) => {
-             const xPercent = p.x / feature.extent;
-             const yPercent = p.y / feature.extent;
-             
-             const lon = tileBbox.minLon + (xPercent * tileWidth);
-             const lat = tileBbox.maxLat - (yPercent * tileHeight);
-             return [lon, lat];
+          const convertPoint = (p: { x: number, y: number }) => {
+            const xPercent = p.x / vectFeature.extent;
+            const yPercent = p.y / vectFeature.extent;
+
+            const lon = tileBbox.minLon + (xPercent * tileWidth);
+            const lat = tileBbox.maxLat - (yPercent * tileHeight);
+            return [lon, lat];
           };
 
-          // Process geometry rings
-          // MVT polygons are array of rings. First ring is exterior, subsequent are holes.
-          // Note: We are simplifying structure here. Ideally we should robustly handle MultiPolygons.
-          // For simple rendering: extract outer rings.
-          
-          const rings: number[][] = [];
-          
+          const rings: number[][][] = [];
           for (const ring of geometry) {
-             const convertedRing = ring.map(convertPoint);
-             rings.push(convertedRing);
+            const convertedRing = ring.map(convertPoint);
+            rings.push(convertedRing);
           }
-           
-          // Simple polygon handling: push as a single polygon with holes if formatted that way
-          // BUT: loadGeometry() returns arrays of Points.
-          // A Polygon in GeoJSON is [ [outer], [hole], [hole] ]
-          // MVT loadGeometry returns [ [x,y], [x,y]... ] corresponding to rings.
-          // We can just push this structure directly as a Polygon coordinates.
-          
-          // Check for building height
-          // properties usually have 'height' or 'render_height' or 'min_height'
-          const properties = feature.properties;
-          
-          // Filter if completely outside our requested bbox (optional optimization)
-          // But since we selected tiles intersecting bbox, most will be relevant.
 
-          buildingFeatures.push({
-            type: 'Feature',
-            id: feature.id,
-            geometry: {
-              type: 'Polygon',
-              coordinates: rings 
-            },
-            properties: {
-             ...properties,
-             // Ensure height exists for rendering
-             height: properties.height || properties.render_height || 5 // default fallback
-            }
+          const properties = vectFeature.properties;
+
+          // Create Turft Feature for Clipping
+          const geoJsonFeature = polygon(rings, {
+            ...properties,
+            height: properties.height || properties.render_height || 5
           });
+
+          // Clip to bounding box
+          // bboxClip takes feature and [minX, minY, maxX, maxY]
+          const clipped = bboxClip(geoJsonFeature, [minLon, minLat, maxLon, maxLat]);
+
+          if (clipped && clipped.geometry && clipped.geometry.coordinates.length > 0) {
+            // bboxClip might return Polygon or MultiPolygon. Ensure we handle it.
+            buildingFeatures.push(clipped);
+          }
         }
 
       } catch (err) {

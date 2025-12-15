@@ -17,6 +17,8 @@
     "@mapbox/vector-tile": "^2.0.4",
     "@react-three/drei": "^9.105.0",
     "@react-three/fiber": "^8.16.0",
+    "@turf/bbox-clip": "^7.3.1",
+    "@turf/helpers": "^7.3.1",
     "deck.gl": "^9.0.0",
     "leva": "^0.9.35",
     "lucide-react": "^0.400.0",
