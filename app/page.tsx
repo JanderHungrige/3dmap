@@ -494,7 +494,7 @@ export default function Home() {
                 <button
                   onClick={handleGenerateCityscape}
                   disabled={loading}
-                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg text-black font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Map className="w-4 h-4" />
                   Generate Cityscape (3D Buildings)
