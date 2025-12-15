@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ExternalLink, Map, Loader2, Eye, EyeOff, Info, Settings } from 'lucide-react';
 import MapCanvas from '@/components/MapCanvas';
+import CityscapeMap from '@/components/CityscapeMap';
 import ControlsPanel from '@/components/ControlsPanel';
 import { parseBoundingBox, BoundingBox } from '@/lib/tileUtils';
 import { FilterMethod } from '@/lib/terrainFilters';
@@ -10,7 +11,7 @@ import { FilterMethod } from '@/lib/terrainFilters';
 export default function Home() {
   const [bboxInput, setBboxInput] = useState('');
   const [bbox, setBbox] = useState<BoundingBox | null>(null);
-  const [viewMode, setViewMode] = useState<'r3f' | 'rayshader'>('r3f');
+  const [viewMode, setViewMode] = useState<'r3f' | 'rayshader' | 'cityscape'>('r3f');
   const [rayshaderImage, setRayshaderImage] = useState<string | null>(null);
   const [rayshaderLoading, setRayshaderLoading] = useState(false);
   const [rayshaderError, setRayshaderError] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export default function Home() {
   const [meshResolution, setMeshResolution] = useState<128 | 256 | 512 | 1024>(256);
   const [filterMethod, setFilterMethod] = useState<FilterMethod>('median');
   const [useRealScale] = useState(true); // Always use Real Scale mode
+  const [showBuildings, setShowBuildings] = useState(true); // Show buildings in cityscape mode
   const [showUI, setShowUI] = useState(true);
   const [showInfo, setShowInfo] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -52,6 +54,20 @@ export default function Home() {
     
     setBbox(parsed);
     setViewMode('r3f');
+  };
+
+  const handleGenerateCityscape = () => {
+    setError(null);
+    setRayshaderError(null);
+    const parsed = parseBoundingBox(bboxInput);
+    
+    if (!parsed) {
+      setError('Invalid bounding box format. Please use: minLon, minLat, maxLon, maxLat');
+      return;
+    }
+    
+    setBbox(parsed);
+    setViewMode('cityscape');
   };
 
   const handleGenerateRayshader = async () => {
@@ -476,6 +492,14 @@ export default function Home() {
                   )}
                 </button>
                 <button
+                  onClick={handleGenerateCityscape}
+                  disabled={loading}
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 rounded-lg text-white font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Map className="w-4 h-4" />
+                  Generate Cityscape (3D Buildings)
+                </button>
+                <button
                   onClick={handleGenerateRayshader}
                   disabled={rayshaderLoading}
                   className="px-6 py-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-700 hover:to-amber-700 rounded-lg text-black font-semibold flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -514,6 +538,20 @@ export default function Home() {
               onUseRealScaleChange={() => {}} // No-op since we always use Real Scale
               onLoadingChange={setLoading}
               onExportReady={setExportFunctions}
+            />
+          ) : viewMode === 'cityscape' ? (
+            <CityscapeMap
+              bbox={bbox}
+              textureType={textureType}
+              heightExaggeration={heightExaggeration}
+              autoRotate={autoRotate}
+              meshResolution={meshResolution}
+              filterMethod={filterMethod}
+              useRealScale={useRealScale}
+              onUseRealScaleChange={() => {}} // No-op since we always use Real Scale
+              onLoadingChange={setLoading}
+              onExportReady={setExportFunctions}
+              showBuildings={showBuildings}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-black relative">
@@ -582,6 +620,8 @@ export default function Home() {
               filterMethod={filterMethod}
               onFilterMethodChange={setFilterMethod}
               onUseRealScaleChange={() => {}} // No-op since we always use Real Scale
+              showBuildings={viewMode === 'cityscape' ? showBuildings : undefined}
+              onShowBuildingsChange={viewMode === 'cityscape' ? setShowBuildings : undefined}
               onExportJPEG={exportFunctions.exportJPEG}
               onExportPNG={exportFunctions.exportPNG}
               onExportGLB={exportFunctions.exportGLB}

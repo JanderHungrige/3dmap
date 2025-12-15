@@ -17,6 +17,8 @@ interface ControlsPanelProps {
   onFilterMethodChange: (value: FilterMethod) => void;
   useRealScale: boolean;
   onUseRealScaleChange: (value: boolean) => void;
+  showBuildings?: boolean;
+  onShowBuildingsChange?: (value: boolean) => void;
   onExportJPEG: () => void;
   onExportPNG: () => void;
   onExportGLB: () => void;
@@ -38,6 +40,8 @@ export default function ControlsPanel({
   onFilterMethodChange,
   useRealScale,
   onUseRealScaleChange,
+  showBuildings,
+  onShowBuildingsChange,
   onExportJPEG,
   onExportPNG,
   onExportGLB,
@@ -119,6 +123,12 @@ export default function ControlsPanel({
       value: autoRotate,
       onChange: onAutoRotateChange,
     },
+    ...(showBuildings !== undefined && onShowBuildingsChange ? {
+      'Show Buildings': {
+        value: showBuildings,
+        onChange: onShowBuildingsChange,
+      },
+    } : {}),
     'Export Format': {
       value: exportFormat,
       options: {
