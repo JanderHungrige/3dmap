@@ -9,6 +9,7 @@ import { stitchTiles } from '@/lib/tileStitcher';
 import { getTilesForBoundingBox, calculateZoomLevel } from '@/lib/tileUtils';
 import { FilterMethod, applyTerrainFilter } from '@/lib/terrainFilters';
 import { CanvasControls } from './CanvasControls';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 /**
  * CityscapeMap - Hybrid R3F Terrain + Deck.gl Buildings
@@ -21,7 +22,7 @@ import { CanvasControls } from './CanvasControls';
 
 interface CityscapeMapProps {
   bbox: BoundingBox;
-  textureType: 'satellite' | 'streets' | 'heatmap';
+  textureType: 'satellite' | 'satellite-v9' | 'satellite-streets' | 'streets' | 'heatmap';
   heightExaggeration: number;
   autoRotate: boolean;
   meshResolution: 128 | 256 | 512 | 1024;
@@ -39,6 +40,14 @@ interface CityscapeMapProps {
   }) => void;
   showBuildings: boolean;
   showUI?: boolean;
+}
+
+function OrbitControlsAutoRotateFix({ controlsRef }: { controlsRef: React.RefObject<OrbitControlsImpl> }) {
+  // Ensure OrbitControls.update() runs every frame so autoRotate works even without damping.
+  useFrame(() => {
+    controlsRef.current?.update();
+  });
+  return null;
 }
 
 /**
@@ -124,8 +133,7 @@ function TerrainMesh({
   meshResolution,
   filterMethod,
   useRealScale,
-  satelliteTexture,
-  streetsTexture,
+  mapTexture,
   heatmapTexture,
   terrainImageData,
   terrainWidth,
@@ -134,13 +142,12 @@ function TerrainMesh({
   maxElevation,
 }: {
   bbox: BoundingBox;
-  textureType: 'satellite' | 'streets' | 'heatmap';
+  textureType: 'satellite' | 'satellite-v9' | 'satellite-streets' | 'streets' | 'heatmap';
   heightExaggeration: number;
   meshResolution: 128 | 256 | 512 | 1024;
   filterMethod: FilterMethod;
   useRealScale: boolean;
-  satelliteTexture: THREE.Texture | null;
-  streetsTexture: THREE.Texture | null;
+  mapTexture: THREE.Texture | null;
   heatmapTexture: THREE.Texture | null;
   terrainImageData: ImageData | null;
   minElevation: number;
@@ -270,11 +277,9 @@ function TerrainMesh({
     geometry.computeBoundingBox();
   }, [terrainImageData, heightExaggeration, terrainWidth, terrainHeight, planeWidth, meshResolution, filterMethod, useRealScale, horizontalDistanceMeters]);
 
-  const texture = textureType === 'satellite'
-    ? satelliteTexture
-    : textureType === 'heatmap'
-      ? heatmapTexture
-      : streetsTexture;
+  const texture = textureType === 'heatmap'
+    ? heatmapTexture
+    : mapTexture;
 
   if (texture) {
     texture.wrapS = THREE.RepeatWrapping;
@@ -436,9 +441,9 @@ function Building({
     ? baseElevation * horizontalScaleFactor * heightExaggeration
     : baseElevation * 0.01 * heightExaggeration;
 
-  const polygons: number[][][] = feature.geometry.type === 'MultiPolygon'
-    ? feature.geometry.coordinates
-    : [feature.geometry.coordinates];
+  const polygons: number[][][][] = feature.geometry.type === 'MultiPolygon'
+    ? feature.geometry.coordinates as unknown as number[][][][]
+    : [feature.geometry.coordinates as unknown as number[][][]];
 
   return (
     <group>
@@ -489,8 +494,7 @@ export default function CityscapeMap({
   showBuildings,
   showUI = true,
 }: CityscapeMapProps) {
-  const [satelliteTexture, setSatelliteTexture] = useState<THREE.Texture | null>(null);
-  const [streetsTexture, setStreetsTexture] = useState<THREE.Texture | null>(null);
+  const [mapTexture, setMapTexture] = useState<THREE.Texture | null>(null);
   const [heatmapTexture, setHeatmapTexture] = useState<THREE.Texture | null>(null);
   const [terrainImageData, setTerrainImageData] = useState<ImageData | null>(null);
   const [minElevation, setMinElevation] = useState(0);
@@ -513,6 +517,7 @@ export default function CityscapeMap({
     }>;
   } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
 
   // Load terrain data - EXACT COPY from MapCanvas
   useEffect(() => {
@@ -532,21 +537,29 @@ export default function CityscapeMap({
         const zoom = calculateZoomLevel(bbox);
         const tiles = getTilesForBoundingBox(bbox, zoom);
 
-        const satelliteResult = await stitchTiles(tiles, bbox, 'satellite', token);
-        const satelliteTexture = new THREE.Texture(satelliteResult.canvas);
-        satelliteTexture.needsUpdate = true;
-        setSatelliteTexture(satelliteTexture);
-        setTextureWidth(satelliteResult.canvas.width);
-        setTextureHeight(satelliteResult.canvas.height);
-
-        const streetsResult = await stitchTiles(tiles, bbox, 'streets', token);
-        const streetsTexture = new THREE.Texture(streetsResult.canvas);
-        streetsTexture.needsUpdate = true;
-        setStreetsTexture(streetsTexture);
+        if (textureType !== 'heatmap') {
+          try {
+            const result = await stitchTiles(tiles, bbox, textureType, token);
+            const texture = new THREE.Texture(result.canvas);
+            texture.needsUpdate = true;
+            setMapTexture(texture);
+            if (textureType === 'satellite') { // Store dims from satellite for fallback
+              setTextureWidth(result.canvas.width);
+              setTextureHeight(result.canvas.height);
+            }
+          } catch (err) {
+            console.error("Error loading visual tiles", err);
+          }
+        }
 
         const terrainResult = await stitchTiles(tiles, bbox, 'terrain-rgb', token);
         if (terrainResult.imageData) {
           setTerrainImageData(terrainResult.imageData);
+
+          if (textureType === 'heatmap' || !textureWidth) {
+            setTextureWidth(terrainResult.imageData.width);
+            setTextureHeight(terrainResult.imageData.height);
+          }
 
           const filteredHeights = applyTerrainFilter(
             terrainResult.imageData,
@@ -584,7 +597,7 @@ export default function CityscapeMap({
     };
 
     loadTiles();
-  }, [bbox, onLoadingChange, filterMethod]);
+  }, [bbox, onLoadingChange, filterMethod, textureType]);
 
   // Fetch building data from Mapbox API
   useEffect(() => {
@@ -659,8 +672,7 @@ export default function CityscapeMap({
               meshResolution={meshResolution}
               filterMethod={filterMethod}
               useRealScale={useRealScale}
-              satelliteTexture={satelliteTexture}
-              streetsTexture={streetsTexture}
+              mapTexture={mapTexture}
               heatmapTexture={heatmapTexture}
               terrainImageData={terrainImageData}
               terrainWidth={textureWidth}
@@ -696,9 +708,12 @@ export default function CityscapeMap({
           </>
         )}
 
+        <OrbitControlsAutoRotateFix controlsRef={controlsRef} />
         <OrbitControls
+          ref={controlsRef as any}
           autoRotate={autoRotate}
           autoRotateSpeed={0.5}
+          enableDamping={false}
           enablePan={true}
           enableZoom={true}
           minDistance={3}

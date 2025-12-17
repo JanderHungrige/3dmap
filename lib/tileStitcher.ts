@@ -6,7 +6,7 @@ import { BoundingBox, TileCoord, getMapboxTileUrl, tileToBoundingBox, terrainRGB
 export async function stitchTiles(
   tiles: TileCoord[],
   bbox: BoundingBox,
-  style: 'satellite' | 'streets' | 'terrain-rgb',
+  style: 'satellite' | 'satellite-v9' | 'satellite-streets' | 'streets' | 'terrain-rgb',
   token: string
 ): Promise<{ canvas: HTMLCanvasElement; imageData?: ImageData }> {
   if (tiles.length === 0) {
@@ -22,11 +22,11 @@ export async function stitchTiles(
 
   // Determine tile size (Mapbox tiles are typically 512x512 at @2x)
   const tileSize = 512;
-  
+
   // Calculate grid dimensions
   const tilesByX = new Map<number, TileCoord[]>();
   const tilesByY = new Map<number, TileCoord[]>();
-  
+
   tiles.forEach(tile => {
     if (!tilesByX.has(tile.x)) tilesByX.set(tile.x, []);
     if (!tilesByY.has(tile.y)) tilesByY.set(tile.y, []);
@@ -48,20 +48,20 @@ export async function stitchTiles(
   // Load and draw all tiles
   const tilePromises = tiles.map(async (tile) => {
     const url = getMapboxTileUrl(tile, style, token);
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to fetch tile: ${url}`);
-      
+
       const blob = await response.blob();
       const img = await createImageBitmap(blob);
-      
+
       const xIndex = xCoords.indexOf(tile.x);
       const yIndex = yCoords.indexOf(tile.y);
-      
+
       const x = xIndex * tileSize;
       const y = yIndex * tileSize;
-      
+
       ctx.drawImage(img, x, y, tileSize, tileSize);
       img.close();
     } catch (error) {

@@ -28,6 +28,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# local logs / artifacts
+rayshader_log.txt
+
 # vercel
 .vercel
 

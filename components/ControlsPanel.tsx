@@ -5,20 +5,20 @@ import { FilterMethod } from '@/lib/terrainFilters';
 import { useState } from 'react';
 
 interface ControlsPanelProps {
-  textureType: 'satellite' | 'streets' | 'heatmap';
-  onTextureChange: (type: 'satellite' | 'streets' | 'heatmap') => void;
+  textureType: 'satellite' | 'satellite-v9' | 'satellite-streets' | 'streets' | 'heatmap';
+  onTextureChange: (type: 'satellite' | 'satellite-v9' | 'satellite-streets' | 'streets' | 'heatmap') => void;
   heightExaggeration: number;
-  onHeightChange: (value: number) => void;
+  onHeightChange: (height: number) => void;
   autoRotate: boolean;
-  onAutoRotateChange: (value: boolean) => void;
+  onAutoRotateChange: (rotate: boolean) => void;
   meshResolution: 128 | 256 | 512 | 1024;
-  onMeshResolutionChange: (value: 128 | 256 | 512 | 1024) => void;
+  onMeshResolutionChange: (res: 128 | 256 | 512 | 1024) => void;
   filterMethod: FilterMethod;
-  onFilterMethodChange: (value: FilterMethod) => void;
+  onFilterMethodChange: (method: FilterMethod) => void;
   useRealScale: boolean;
   onUseRealScaleChange: (value: boolean) => void;
   showBuildings?: boolean;
-  onShowBuildingsChange?: (value: boolean) => void;
+  onShowBuildingsChange?: (show: boolean) => void;
   onExportJPEG: () => void;
   onExportPNG: () => void;
   onExportGLB: () => void;
@@ -77,8 +77,14 @@ export default function ControlsPanel({
   useControls({
     Texture: {
       value: textureType,
-      options: ['satellite', 'streets', 'heatmap'],
-      onChange: (value) => onTextureChange(value as 'satellite' | 'streets' | 'heatmap'),
+      options: {
+        'Satellite (Original)': 'satellite',
+        'Satellite (Processed)': 'satellite-v9',
+        'Satellite (Hybrid)': 'satellite-streets',
+        'Streets': 'streets',
+        'Elevation Heatmap': 'heatmap',
+      },
+      onChange: (value) => onTextureChange(value as 'satellite' | 'satellite-v9' | 'satellite-streets' | 'streets' | 'heatmap'),
     },
     'Mesh Resolution': {
       value: meshResolution,
